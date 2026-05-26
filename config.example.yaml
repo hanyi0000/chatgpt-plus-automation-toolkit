@@ -46,6 +46,12 @@ mail_sources:
     raw_pool_file: "data/icloud/mail_pool.txt"
     code_timeout_sec: 150
     poll_interval_sec: 5
+  qq:
+    source: "qq_imap"
+    accounts_file: "data/qq/accounts.txt"
+    raw_pool_file: "data/qq/mail_pool.txt"
+    code_timeout_sec: 150
+    poll_interval_sec: 5
 
 register_profile:
   age_min: 21

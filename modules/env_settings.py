@@ -125,6 +125,10 @@ SETTINGS: list[SettingItem] = [
     SettingItem("PAYPAL_PHONE_MAX_USES", "手机号最大使用次数", "PayPal Plus", "int", help_text="每个手机号最多用几次（默认5）。", section="PayPal Plus"),
     SettingItem("PAYPAL_PHONE_RETRY_ON_REJECT", "手机号被拒重试次数", "PayPal Plus", "int", help_text="PayPal 拒绝手机号后换号重试几次（默认3）。", section="PayPal Plus"),
     SettingItem("PAYPAL_BILLING_COUNTRY", "账单国家", "PayPal Plus", help_text="生成长链接时的账单国家（默认 US）。", section="PayPal Plus"),
+    SettingItem("PAYPAL_REGISTER_USE_PROXY", "注册阶段代理", "PayPal Plus", "bool", help_text="流程1注册和 Session 补录默认直连；仅明确需要时开启。", section="代理"),
+    SettingItem("PAYPAL_REGISTER_PROXY_FILE", "注册代理池文件", "PayPal Plus", help_text="仅在注册阶段代理开启时使用。", section="代理"),
+    SettingItem("PAYPAL_USE_PROXY", "支付阶段代理", "PayPal Plus", "bool", help_text="仅控制流程2 PayPal 支付，不会让流程1注册走代理。", section="代理"),
+    SettingItem("PAYPAL_PROXY_FILE", "支付代理池文件", "PayPal Plus", help_text="仅在支付阶段代理开启时使用。", section="代理"),
 ]
 
 SETTINGS_BY_KEY = {item.key: item for item in SETTINGS}
@@ -275,6 +279,20 @@ WIZARD_SECTIONS: list[tuple[str, str, tuple[str, ...]]] = [
         ),
     ),
     (
+        "PayPal Plus",
+        "注册阶段默认直连，支付阶段代理独立控制。",
+        (
+            "PAYPAL_ICLOUD_FILE",
+            "PAYPAL_CARDS_FILE",
+            "PAYPAL_PHONES_FILE",
+            "PAYPAL_BILLING_COUNTRY",
+            "PAYPAL_REGISTER_USE_PROXY",
+            "PAYPAL_REGISTER_PROXY_FILE",
+            "PAYPAL_USE_PROXY",
+            "PAYPAL_PROXY_FILE",
+        ),
+    ),
+    (
         "邮箱池 & 代理",
         "默认邮箱源、MoeMail、代理池、接码平台凭据。",
         (
@@ -308,7 +326,7 @@ WIZARD_SECTIONS: list[tuple[str, str, tuple[str, ...]]] = [
 CONFIG_CENTER_MENU: list[tuple[str, str]] = [
     ("Dashboard 首页", "展示关键状态"),
     ("按场景配置", "大多数情况进这里"),
-    ("全量查找/修改", "89 项全开，搜索 key"),
+    ("全量查找/修改", f"{len(SETTINGS)} 项全开，搜索 key"),
     ("套用流程2预设", "日常 / 稳定 / 调试"),
     ("体检", "只读诊断"),
     ("恢复备份", "查看/回滚历史 .env"),
@@ -670,7 +688,7 @@ def render_dashboard(path: Path, values: dict[str, str], original_values: dict[s
     print(paint("功能入口", MAGENTA, bold=True))
     menu_items = [
         ("1", "按场景配置", "大多数场景进这里"),
-        ("2", "全量查找/修改", "89 项全开"),
+        ("2", "全量查找/修改", f"{len(SETTINGS)} 项全开"),
         ("3", "套用流程2预设", "日常 / 稳定 / 调试"),
         ("4", "体检", "只读诊断"),
         ("5", "恢复备份", "回滚历史 .env"),
@@ -921,6 +939,12 @@ def flow2_health_rows(path: Path, values: dict[str, str]) -> list[tuple[str, str
     if is_true(values.get("USE_PROXY", "")):
         proxy_ok, proxy_detail = check_path(values.get("PROXY_FILE", ""))
         rows.append(("代理池", "OK" if proxy_ok else "WARN", proxy_detail))
+    if is_true(values.get("PAYPAL_REGISTER_USE_PROXY", "")):
+        proxy_ok, proxy_detail = check_path(values.get("PAYPAL_REGISTER_PROXY_FILE", ""))
+        rows.append(("PayPal 注册代理池", "OK" if proxy_ok else "WARN", proxy_detail))
+    if is_true(values.get("PAYPAL_USE_PROXY", "")):
+        proxy_ok, proxy_detail = check_path(values.get("PAYPAL_PROXY_FILE", ""))
+        rows.append(("PayPal 支付代理池", "OK" if proxy_ok else "WARN", proxy_detail))
     if path.exists():
         rows.append((".env 文件", "OK", str(path)))
     else:

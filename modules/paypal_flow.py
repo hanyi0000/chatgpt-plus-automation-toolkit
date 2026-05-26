@@ -9,7 +9,7 @@ from typing import Any
 
 from .storage import MailAccount
 from .utils import load_config, load_env, log, resolve_path
-from .paypal_register import run_paypal_register, LINK_POOL_FILE, register_one
+from .paypal_register import LINK_POOL_FILE, register_one, resolve_register_proxy_settings, run_paypal_register
 from .paypal_pay import run_paypal_pay, PENDING_AUTH_FILE, PAYPAL_OUTPUT_ROOT, is_local_random_card_mode
 from .paypal_card_pool import CardPool
 from .paypal_card_redeem import ensure_card_supply
@@ -399,16 +399,10 @@ def _run_paypal_session_export(cfg: dict[str, Any] | None = None) -> int:
     PAYPAL_SESSIOND_DIR.mkdir(parents=True, exist_ok=True)
     env = load_env(".env")
 
-    # 复用流程1（日本代理）开关与代理池来源
-    use_proxy = (env.get("PAYPAL_REGISTER_USE_PROXY") or env.get("PAYPAL_USE_PROXY") or "").strip().lower() in ("true", "1", "yes")
+    # Session 补录复用流程1浏览器设置；注册阶段默认直连。
+    use_proxy, proxy_file = resolve_register_proxy_settings(env)
     proxy_pool: ProxyPool | None = None
     if use_proxy:
-        proxy_file = (
-            env.get("PAYPAL_REGISTER_PROXY_FILE")
-            or env.get("PAYPAL_PROXY_FILE")
-            or env.get("PROXY_FILE")
-            or "data/proxies/proxies.txt"
-        )
         proxy_pool = ProxyPool(proxy_file)
         if proxy_pool.count() <= 0:
             log(f"PayPal 流程3 Session 导出：流程1代理已开启但代理池为空: {proxy_file}")

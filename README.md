@@ -185,21 +185,30 @@ MOEMAIL_CREATE_MODE=human
 #### 代理配置
 
 ```ini
-# 全局代理开关（流程一/Free 注册）
+# 通用流程一 / Free 注册代理
 USE_PROXY=false
 PROXY_FILE=data/proxies/proxies.txt
 
-# PayPal 流程独立代理开关
+# PayPal 流程一注册与 Session 补录代理（默认直连）
+PAYPAL_REGISTER_USE_PROXY=false
+PAYPAL_REGISTER_PROXY_FILE=data/proxies/proxies_jp.txt
+
+# PayPal 流程二支付代理
 PAYPAL_USE_PROXY=false
 PAYPAL_PROXY_FILE=data/proxies/proxies.txt
 ```
+
+`PAYPAL_USE_PROXY=true` 仅影响 PayPal 支付阶段，不会让注册阶段自动走代理；注册需要代理时单独开启 `PAYPAL_REGISTER_USE_PROXY`。
 
 代理文件格式（每行一个）：
 ```
 http://user:pass@host:port
 socks5://host:port
 host:port
+user:pass@host:port
 ```
+
+`user:pass@host:port` 会按 HTTP 认证代理处理。当前不支持直接填写 `vless://...`；请先通过本地代理客户端转换为 HTTP 或 SOCKS5 监听地址。
 
 #### 接码平台配置
 
@@ -328,6 +337,7 @@ user@qq.com----QQ邮箱IMAP授权码
 http://user:pass@ip:port
 socks5://ip:port
 ip:port
+user:pass@ip:port
 ```
 
 ## 输出文件说明
@@ -440,7 +450,10 @@ socks5://user:pass@ip:port
 
 # 简写（默认 HTTP）
 ip:port
+user:pass@ip:port
 ```
+
+`vless://...` 不能直接交给当前使用的 Playwright / HTTP 请求客户端，需转换为 HTTP 或 SOCKS5 代理后填写。
 
 ## 许可证
 

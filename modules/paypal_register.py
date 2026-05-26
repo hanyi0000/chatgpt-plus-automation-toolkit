@@ -193,6 +193,18 @@ def filter_accounts_by_email(accounts: list[MailAccount], selected_email: str | 
     return [account for account in accounts if account.email.strip().lower() == email]
 
 
+def resolve_register_proxy_settings(env: dict[str, str]) -> tuple[bool, str]:
+    """Resolve the PayPal registration proxy independently from payment proxy settings."""
+    use_proxy = (env.get("PAYPAL_REGISTER_USE_PROXY") or "").strip().lower() in ("true", "1", "yes")
+    proxy_file = (
+        env.get("PAYPAL_REGISTER_PROXY_FILE")
+        or env.get("PAYPAL_PROXY_FILE")
+        or env.get("PROXY_FILE")
+        or "data/proxies/proxies.txt"
+    )
+    return use_proxy, proxy_file
+
+
 async def register_one(
     account: MailAccount,
     mail_source: str,
@@ -457,19 +469,9 @@ async def run_paypal_register(
             log(f"PayPal flow1: no pending accounts for source={active_source}")
             return 0
 
-    use_proxy = (env.get("PAYPAL_REGISTER_USE_PROXY") or env.get("PAYPAL_USE_PROXY") or "").strip().lower() in (
-        "true",
-        "1",
-        "yes",
-    )
+    use_proxy, proxy_file = resolve_register_proxy_settings(env)
     proxy_pool: ProxyPool | None = None
     if use_proxy:
-        proxy_file = (
-            env.get("PAYPAL_REGISTER_PROXY_FILE")
-            or env.get("PAYPAL_PROXY_FILE")
-            or env.get("PROXY_FILE")
-            or "data/proxies/proxies.txt"
-        )
         proxy_pool = ProxyPool(proxy_file)
         if proxy_pool.count() == 0:
             log(f"PayPal flow1: proxy is enabled but pool is empty: {proxy_file}")

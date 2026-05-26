@@ -2325,6 +2325,7 @@ async def run_paypal_pay(
         mode_label = card_source_mode or "PAYPAL_CARD_SOURCE=local_random"
         log(f"PayPal 流程2：已启用本地随机卡资料模式（{mode_label}）")
     if phone_pool.count() <= 0:
+        log(f'-----------{phones_file}|{phone_pool}')
         log("PayPal 流程2：手机号池为空")
         return 0
 
