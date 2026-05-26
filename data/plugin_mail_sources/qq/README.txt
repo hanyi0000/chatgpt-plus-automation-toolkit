@@ -1,12 +1,7 @@
-邮箱来源：qq
+邮箱来源：qq（已内置 IMAP 取码）
 
-把这个来源要使用的邮箱账号填到 account.txt。
+项目内置 QQ 邮箱 IMAP 取码，请将账号填入 data/qq/accounts.txt 和 data/qq/mail_pool.txt：
 
-支持格式 1：
-账号：xxx@example.com
-接码地址：https://example.com/mailbox/xxx
+user@qq.com----QQ邮箱IMAP授权码
 
-支持格式 2：
-xxx@example.com----https://example.com/mailbox/xxx
-
-注意：如果这个来源没有接码地址，而是要登录邮箱网页/API 拉码，还需要在桥接端继续接对应 provider。
+需要先在 QQ 邮箱设置中启用 IMAP/SMTP 服务并生成授权码；不要填写邮箱登录密码。

@@ -164,12 +164,23 @@ def configure_mail_source(cfg: dict, source_name: str) -> None:
         "moemail": "moemail",
         "icloud": "icloud_query",
         "icloud_query": "icloud_query",
+        "qq": "qq",
+        "qq_imap": "qq",
     }
     normalized = aliases.get(source_name)
     if not normalized:
-        raise RuntimeError(f"MAIL_SOURCE 仅支持 moemail / hotmail / icloud_query，当前值: {source_name}")
+        raise RuntimeError(f"MAIL_SOURCE 仅支持 moemail / hotmail / icloud_query / qq，当前值: {source_name}")
     sources = cfg.get("mail_sources") or {}
     source_cfg = sources.get(normalized)
+    if normalized == "qq" and not source_cfg:
+        current_mail = cfg.get("mail", {})
+        source_cfg = {
+            "source": "qq_imap",
+            "accounts_file": "data/qq/accounts.txt",
+            "raw_pool_file": "data/qq/mail_pool.txt",
+            "code_timeout_sec": current_mail.get("code_timeout_sec", 150),
+            "poll_interval_sec": current_mail.get("poll_interval_sec", 5),
+        }
     if not source_cfg:
         raise RuntimeError(f"config.yaml 缂哄皯 mail_sources.{normalized}")
     cfg["mail"] = {**cfg.get("mail", {}), **source_cfg}
@@ -179,8 +190,8 @@ def configure_mail_source(cfg: dict, source_name: str) -> None:
 def prompt_mail_source(cfg: dict) -> str:
     sources = cfg.get("mail_sources") or {}
     available = []
-    for key in ("moemail", "hotmail", "icloud_query"):
-        if sources.get(key):
+    for key in ("moemail", "hotmail", "icloud_query", "qq"):
+        if key == "qq" or sources.get(key):
             available.append(key)
     if not available:
         raise RuntimeError("config.yaml has no available mail_sources")
@@ -189,6 +200,7 @@ def prompt_mail_source(cfg: dict) -> str:
         "icloud_query": "iCloud 查询邮箱",
         "hotmail": "微软邮箱 (Hotmail / Outlook)",
         "moemail": "自建邮箱池 (MoeMail)",
+        "qq": "QQ 邮箱 (IMAP 授权码)",
     }
     ui_header("选择邮箱来源", f"当前: {current}")
     for index, key in enumerate(available, start=1):
@@ -374,7 +386,15 @@ async def run_account(
             chatgpt_session,
             email=account.email,
             mail_source=cfg.get("mail", {}).get("active_source", cfg.get("mail", {}).get("source", "")),
-            source_format="hotmail_graph" if account.client_id and account.refresh_token else ("icloud_query" if account.email.lower().endswith("@icloud.com") else "code_address"),
+            source_format=(
+                "hotmail_graph"
+                if account.client_id and account.refresh_token
+                else (
+                    "icloud_query"
+                    if account.email.lower().endswith("@icloud.com")
+                    else ("qq_imap" if cfg.get("mail", {}).get("source") == "qq_imap" else "code_address")
+                )
+            ),
             code_address=account.code_address,
             payment_link=payment_link,
             profile_dir=str(profile_dir),
@@ -717,7 +737,7 @@ def main() -> int:
     parser.add_argument("--count", type=int, help="目标成功数量")
     parser.add_argument("--country", default="", help="流程二/三接码国家: 序号 / ISO / 平台国家 ID，例如 US")
     parser.add_argument("--sms-provider", default="", help="流程二/三接码平台: herosms / grizzly")
-    parser.add_argument("--mail-source", choices=["moemail", "hotmail", "hotmail_graph"], help="邮箱来源: moemail 或 hotmail")
+    parser.add_argument("--mail-source", choices=["moemail", "hotmail", "hotmail_graph", "icloud", "icloud_query", "qq", "qq_imap"], help="邮箱来源: moemail / hotmail / icloud_query / qq")
     parser.add_argument("--register-mode", choices=["phone", "email"], default="phone", help="Free 注册模式: phone(默认) / email")
     args = parser.parse_args()
     if args.mode == "gopay":
@@ -779,7 +799,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-
 

@@ -114,6 +114,8 @@ def _normalize_mail_source(value: str) -> str:
         "icloud": "icloud_query",
         "icloud_query": "icloud_query",
         "moemail": "moemail",
+        "qq": "qq_imap",
+        "qq_imap": "qq_imap",
     }
     return aliases.get(source, source or "moemail")
 
@@ -123,6 +125,7 @@ def _mail_source_label(source: str) -> str:
         "moemail": "自建邮箱池 (MoeMail)",
         "hotmail_graph": "微软邮箱 (Hotmail / Outlook)",
         "icloud_query": "iCloud 查询邮箱",
+        "qq_imap": "QQ 邮箱 (IMAP 授权码)",
     }
     return labels.get(source, source)
 

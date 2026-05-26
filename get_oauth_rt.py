@@ -90,6 +90,7 @@ DEFAULT_MOEMAIL_DOMAIN_WHITELIST = [
 _RUN_REDEEM_AVAILABLE: bool | None = None
 _RUN_REDEEM_IMPORT_ERROR_PRINTED = False
 _HOTMAIL_LOCAL_CREDS_MISS_LOGGED: set[str] = set()
+QQ_IMAP_DOMAINS = {"qq.com", "foxmail.com", "vip.qq.com"}
 
 
 # ---- Standalone helpers: no AutoTeam-F import required ----
@@ -1527,6 +1528,28 @@ def fetch_icloud_thefindnet_email_code(mail_url: str, email: str = "", timeout: 
         return ""
 
 
+def fetch_qq_imap_email_code(mail_url: str, email: str = "", timeout: int = 12, since: datetime | None = None) -> str:
+    address = (email or extract_email_address(mail_url)).strip()
+    auth_code = str(mail_url or "").strip()
+    if not address or not auth_code:
+        return ""
+    try:
+        from modules.mail_provider import fetch_qq_imap_code
+        from modules.storage import MailAccount
+
+        effective_since = since or (datetime.now(timezone.utc) - timedelta(minutes=10))
+        account = MailAccount(email=address, mail_url=auth_code)
+        code = run_async_blocking(fetch_qq_imap_code(account, effective_since, set()))
+        if code:
+            print(f"[mail] 已从 QQ IMAP 获取验证码: {code}")
+            return str(code).strip()
+        print(f"[mail] QQ IMAP 已读取邮箱但未找到新验证码: {address}")
+        return ""
+    except Exception as exc:
+        print(f"[mail] QQ IMAP 获取失败: {exc}")
+        return ""
+
+
 def fetch_latest_email_code(mail_url: str, email: str = "", timeout: int = 12, since: datetime | None = None) -> str:
     if not mail_url:
         return ""
@@ -1536,6 +1559,9 @@ def fetch_latest_email_code(mail_url: str, email: str = "", timeout: int = 12, s
     if email_domain(email) == "icloud.com" and not re.match(r"^https?://", mail_url, flags=re.IGNORECASE):
         effective_since = since or (datetime.now(timezone.utc) - timedelta(seconds=max(60, timeout)))
         return fetch_icloud_thefindnet_email_code(mail_url, email=email, timeout=timeout, since=effective_since)
+    if email_domain(email) in QQ_IMAP_DOMAINS and not re.match(r"^https?://", mail_url, flags=re.IGNORECASE):
+        effective_since = since or (datetime.now(timezone.utc) - timedelta(minutes=10))
+        return fetch_qq_imap_email_code(mail_url, email=email, timeout=timeout, since=effective_since)
     embedded_email = extract_email_address(mail_url)
     if embedded_email and not re.match(r"^https?://", mail_url, flags=re.IGNORECASE):
         if is_moemail_email(embedded_email):
@@ -2027,6 +2053,8 @@ def normalize_input_entry(entry: dict) -> dict:
     source_format = "generic"
     if email.lower().endswith("@icloud.com") and mail_url and not re.match(r"^https?://", mail_url, flags=re.IGNORECASE):
         source_format = "icloud_query"
+    elif email_domain(email) in QQ_IMAP_DOMAINS and mail_url and not re.match(r"^https?://", mail_url, flags=re.IGNORECASE):
+        source_format = "qq_imap"
     return {
         "email": email,
         "password": password,

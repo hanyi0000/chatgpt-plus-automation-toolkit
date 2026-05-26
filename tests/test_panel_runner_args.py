@@ -52,6 +52,12 @@ def test_parse_mail_source_and_selected_email_args() -> None:
     assert args.email == "User@Hotmail.com"
 
 
+def test_parse_qq_mail_source_args() -> None:
+    args = panel_runner.parse_args(["paypal-flow1", "--mail-source", "qq"])
+
+    assert args.mail_source == "qq"
+
+
 def test_parse_all_supported_actions() -> None:
     for action in (
         "paypal-flow1",

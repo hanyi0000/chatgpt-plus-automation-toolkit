@@ -96,7 +96,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--config", default="config.yaml", help="Config file path")
     parser.add_argument(
         "--mail-source",
-        choices=("default", "moemail", "hotmail", "hotmail_graph", "icloud", "icloud_query"),
+        choices=("default", "moemail", "hotmail", "hotmail_graph", "icloud", "icloud_query", "qq", "qq_imap"),
         default="default",
         help="Override flow mail source",
     )

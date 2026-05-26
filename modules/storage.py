@@ -14,6 +14,7 @@ from .utils import LEGACY_OUTPUT_FILES, load_env, migrate_output_file, resolve_p
 EXTERNAL_MAIL_FETCH_MODE_ENV = "MAIL_FETCH_SOURCE"
 EXTERNAL_MAIL_FETCH_MODE_IMAP163 = {"desktop_imap163", "external_imap163", "imap163"}
 EXTERNAL_IMAP163_DIR_ENV = "EXTERNAL_IMAP163_DIR"
+QQ_MAIL_DOMAINS = {"qq.com", "foxmail.com", "vip.qq.com"}
 
 
 @dataclass(frozen=True)
@@ -69,6 +70,11 @@ def _generate_external_imap163_account() -> MailAccount | None:
     return MailAccount(email=email, mail_url="imap163", raw=raw)
 
 
+def is_qq_mail_address(email: str) -> bool:
+    domain = email.rsplit("@", 1)[-1].strip().lower() if "@" in email else ""
+    return domain in QQ_MAIL_DOMAINS
+
+
 def parse_mail_line(line: str) -> MailAccount | None:
     line = line.strip()
     email_match = re.search(r"[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}", line)
@@ -94,6 +100,8 @@ def parse_mail_line(line: str) -> MailAccount | None:
     if len(parts) >= 2 and parts[1].startswith(("http://", "https://")):
         return MailAccount(email=email, mail_url=parts[1], raw=line)
     if len(parts) >= 2 and email.lower().endswith("@icloud.com") and parts[1]:
+        return MailAccount(email=email, mail_url=parts[1], raw=line)
+    if len(parts) >= 2 and is_qq_mail_address(email) and parts[1]:
         return MailAccount(email=email, mail_url=parts[1], raw=line)
     return MailAccount(email=email, mail_url=mail_url, raw=line)
 

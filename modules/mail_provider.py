@@ -22,10 +22,12 @@ GRAPH_TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
 GRAPH_MESSAGES_URL = "https://graph.microsoft.com/v1.0/me/messages"
 IMAP_TOKEN_SCOPE = "offline_access https://outlook.office.com/IMAP.AccessAsUser.All"
 OUTLOOK_IMAP_HOST = "outlook.office365.com"
+QQ_IMAP_HOST = "imap.qq.com"
 APPLEEMAIL_BASE_URL = "https://www.appleemail.top"
 ICLOUD_THEFINDNET_BASE_URL = "https://icloud.thefindnet.xyz"
 APPLEEMAIL_MAILBOXES = ("INBOX", "Junk")
 HOTMAIL_IMAP_MAILBOXES = ("INBOX", "Junk", "Junk Email")
+QQ_IMAP_MAILBOXES = ("INBOX",)
 MAIL_TIME_SKEW = timedelta(minutes=10)
 HOTMAIL_CODE_TIME_SKEW = timedelta(seconds=45)
 HOTMAIL_APPLEEMAIL_HTTP_TIMEOUT_SEC = 8
@@ -85,7 +87,7 @@ class MailProvider:
     async def wait_code(self, account: MailAccount, since: datetime, exclude: set[str] | None = None) -> str:
         exclude = exclude or set()
         self.log(f"开始等待邮箱验证码: {account.email} | 排除旧码数={len(exclude)}")
-        if account.mail_url:
+        if account.mail_url and self.source != "qq_imap":
             code = await wait_code_with_legacy_adapter(
                 account.mail_url,
                 account.email,
@@ -113,6 +115,8 @@ class MailProvider:
         raise TimeoutError(f"验证码等待超时: {last_error or '没有新验证码'}")
 
     async def fetch_code(self, account: MailAccount, since: datetime, exclude: set[str] | None = None) -> str | None:
+        if self.source == "qq_imap":
+            return await fetch_qq_imap_code(account, since, exclude or set())
         if account.mail_url:
             return await fetch_mail_url_code(account.mail_url, exclude or set())
         if self.source == "moemail":
@@ -120,7 +124,7 @@ class MailProvider:
         if self.source == "icloud_query":
             return await fetch_icloud_query_code(account, since, exclude or set())
         if self.source != "hotmail_graph":
-            raise RuntimeError(f"当前邮箱来源仅支持 moemail / hotmail_graph / icloud_query，实际配置: {self.source}")
+            raise RuntimeError(f"当前邮箱来源仅支持 moemail / hotmail_graph / icloud_query / qq_imap，实际配置: {self.source}")
         return await fetch_hotmail_graph_code(account, since, exclude or set())
 
 
@@ -531,6 +535,13 @@ async def fetch_hotmail_imap_code(account: MailAccount, since: datetime, exclude
     return await asyncio.to_thread(fetch_hotmail_imap_code_sync, account.email, access_token, since, exclude)
 
 
+async def fetch_qq_imap_code(account: MailAccount, since: datetime, exclude: set[str]) -> str | None:
+    auth_code = (account.mail_url or account.password or "").strip()
+    if not auth_code:
+        raise RuntimeError("QQ IMAP 需要 email----授权码 格式；授权码需在 QQ 邮箱设置中开启 IMAP 后生成")
+    return await asyncio.to_thread(fetch_qq_imap_code_sync, account.email, auth_code, since, exclude)
+
+
 async def get_imap_access_token(client_id: str, refresh_token: str) -> str:
     if not client_id or not refresh_token:
         raise RuntimeError("Hotmail IMAP 需要 client_id 和 refresh_token")
@@ -607,6 +618,55 @@ def fetch_hotmail_imap_code_sync(email: str, access_token: str, since: datetime,
                     return code
                 if code and code in exclude:
                     log(f"Outlook IMAP({mailbox}) 命中验证码但在排除列表中，等待更新: {code}")
+    return None
+
+
+def fetch_qq_imap_code_sync(email: str, auth_code: str, since: datetime, exclude: set[str]) -> str | None:
+    since_utc = since.astimezone(timezone.utc) if since.tzinfo else since.replace(tzinfo=timezone.utc)
+    since_floor = since_utc - MAIL_TIME_SKEW
+    date_filter = since_floor.strftime("%d-%b-%Y")
+    with imaplib.IMAP4_SSL(QQ_IMAP_HOST, 993) as conn:
+        conn.login(email, auth_code)
+        for mailbox in QQ_IMAP_MAILBOXES:
+            try:
+                select_status, _ = conn.select(mailbox, readonly=True)
+            except Exception:
+                continue
+            if select_status != "OK":
+                continue
+            status, data = conn.search(None, "SINCE", date_filter)
+            if status != "OK":
+                continue
+            ids = (data[0] or b"").split()
+            for message_id in reversed(ids[-40:]):
+                status, fetched = conn.fetch(message_id, "(BODY.PEEK[] INTERNALDATE)")
+                if status != "OK":
+                    continue
+                raw_message = b""
+                internal_date = None
+                for item in fetched:
+                    if not isinstance(item, tuple):
+                        continue
+                    metadata, payload = item
+                    raw_message += payload or b""
+                    match = re.search(rb'INTERNALDATE "([^"]+)"', metadata or b"")
+                    if match:
+                        try:
+                            internal_date = parsedate_to_datetime(match.group(1).decode("ascii", errors="ignore"))
+                        except Exception:
+                            internal_date = None
+                received = parse_imap_received_time(raw_message, internal_date)
+                if received and received < since_floor:
+                    continue
+                text = decode_imap_message(raw_message)
+                if not looks_like_openai_mail(text):
+                    continue
+                code = extract_code(text)
+                if code and code not in exclude:
+                    log(f"已从 QQ IMAP({mailbox}) 提取验证码: {code}")
+                    return code
+                if code and code in exclude:
+                    log(f"QQ IMAP({mailbox}) 命中验证码但在排除列表中，等待更新: {code}")
     return None
 
 
@@ -766,4 +826,3 @@ def looks_like_openai_mail(text: str) -> bool:
         ]
     )
     return has_sender_hint and has_code_hint
-

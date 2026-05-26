@@ -201,7 +201,7 @@ class RunPage(ttk.Frame):
         self.mail_source_combo = ttk.Combobox(
             input_row,
             textvariable=self.mail_source_var,
-            values=("default", "hotmail", "moemail", "icloud"),
+            values=("default", "hotmail", "moemail", "icloud", "qq"),
             width=10,
             state="readonly",
         )
@@ -396,7 +396,7 @@ class ControlPanelApp(tk.Tk):
             ("卡密池", ["paypal_card_codes", "paypal_card_codes_used", "paypal_card_codes_failed"]),
             ("虚拟卡池", ["paypal_cards"]),
             ("手机号池", ["paypal_phones"]),
-            ("邮箱池", ["hotmail_accounts", "hotmail_mail_pool", "icloud_accounts", "icloud_mail_pool", "mail_accounts", "mail_pool"]),
+            ("邮箱池", ["hotmail_accounts", "hotmail_mail_pool", "icloud_accounts", "icloud_mail_pool", "qq_accounts", "qq_mail_pool", "mail_accounts", "mail_pool"]),
             ("长链接池", ["paypal_links"]),
             ("授权账号/输出", ["paypal_pending_auth", "paypal_authorized_rt", "paypal_authorized_sub"]),
         ]

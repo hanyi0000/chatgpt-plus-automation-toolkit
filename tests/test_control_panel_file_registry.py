@@ -14,6 +14,7 @@ def test_get_panel_files_resolves_known_paths(tmp_path: Path) -> None:
         "proxy_jp": "data/proxies/proxies_jp.txt",
         "proxy_us": "data/proxies/proxies_us.txt",
         "hotmail_accounts": "data/hotmail/accounts.txt",
+        "qq_accounts": "data/qq/accounts.txt",
         "paypal_links": "output/paypal注册/长链接账号/account.txt",
         "paypal_pending_auth": "output/paypal注册/待授权账号/account.txt",
     }

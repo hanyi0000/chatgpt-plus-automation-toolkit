@@ -111,6 +111,7 @@ cp config.example.yaml config.yaml
 │   ├── proxies/proxies.txt    # 代理列表
 │   ├── icloud/                # iCloud 邮箱配置
 │   ├── hotmail/               # Hotmail 邮箱配置
+│   ├── qq/                    # QQ 邮箱授权码账号池
 │   └── paypal/
 │       ├── icloud_accounts.txt  # PayPal 流程 iCloud 账号
 │       ├── cards.txt            # 虚拟卡池
@@ -141,7 +142,7 @@ cp .env.example .env
 #### 邮箱源配置
 
 ```ini
-# 邮箱源选择：moemail / hotmail / icloud_query
+# 邮箱源选择：moemail / hotmail / icloud_query / qq
 MAIL_SOURCE=moemail
 
 # 各流程可单独指定邮箱源（覆盖全局）
@@ -151,6 +152,24 @@ FREE_MAIL_SOURCE=moemail
 # 邮箱账号模式：pool（从文件读取）
 MAIL_ACCOUNT_MODE=pool
 ```
+
+#### QQ 邮箱 IMAP
+
+QQ 邮箱来源适用于流程一及 PayPal 注册/后续授权。先在 QQ 邮箱设置中启用 IMAP/SMTP 服务并生成授权码，然后设置：
+
+```ini
+MAIL_SOURCE=qq
+# 或仅覆盖流程一
+FLOW1_MAIL_SOURCE=qq
+```
+
+在 `data/qq/accounts.txt` 与 `data/qq/mail_pool.txt` 中填入相同账号资料：
+
+```text
+user@qq.com----QQ邮箱IMAP授权码
+```
+
+支持 `@qq.com`、`@foxmail.com` 与 `@vip.qq.com`；第二段为授权码，不是邮箱登录密码。
 
 #### MoeMail 自建邮箱池
 
@@ -297,6 +316,12 @@ KW-XXXX----4859540153209563----2030/4----254----+16319163234----AMY MCDONALD----
 email@icloud.com----query_code
 ```
 
+#### data/qq/accounts.txt（QQ 邮箱账号）
+
+```
+user@qq.com----QQ邮箱IMAP授权码
+```
+
 #### data/proxies/proxies.txt（代理列表）
 
 ```
@@ -368,7 +393,7 @@ python main.py [OPTIONS]
   --country COUNTRY     接码国家（ISO 代码或平台 ID）
   --sms-provider {herosms,grizzly,fivesim}
                         接码平台
-  --mail-source {moemail,hotmail,hotmail_graph}
+  --mail-source {moemail,hotmail,hotmail_graph,icloud,icloud_query,qq,qq_imap}
                         邮箱源
   --register-mode {phone,email}
                         Free 注册方式（默认 phone）

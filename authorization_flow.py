@@ -74,11 +74,16 @@ def read_paid_accounts(path: str | Path = output_file("flow2_paid_success")) -> 
             continue
         if len(parts) == 2:
             _, code_address = parts
+            source_format = "code_address"
+            if account.lower().endswith("@icloud.com"):
+                source_format = "icloud_query"
+            elif account.lower().endswith(("@qq.com", "@foxmail.com", "@vip.qq.com")):
+                source_format = "qq_imap"
             records.append(
                 {
                     "account": account,
                     "code_address": code_address,
-                    "source_format": "icloud_query",
+                    "source_format": source_format,
                 }
             )
             continue

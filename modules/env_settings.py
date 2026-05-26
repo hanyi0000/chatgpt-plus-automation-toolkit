@@ -26,9 +26,9 @@ class SettingItem:
 
 
 SETTINGS: list[SettingItem] = [
-    SettingItem("MAIL_SOURCE", "默认邮箱源", "基础设置", "choice", ("icloud_query", "moemail", "hotmail"), help_text="未配置流程专属邮箱源时使用。"),
-    SettingItem("FLOW1_MAIL_SOURCE", "流程一邮箱源", "基础设置", "choice", ("icloud_query", "moemail", "hotmail"), help_text="流程一注册长链接专用邮箱源。"),
-    SettingItem("FLOW3_MAIL_SOURCE", "流程三邮箱源", "基础设置", "choice", ("icloud_query", "moemail", "hotmail"), help_text="流程三授权专用邮箱源。"),
+    SettingItem("MAIL_SOURCE", "默认邮箱源", "基础设置", "choice", ("icloud_query", "moemail", "hotmail", "qq"), help_text="未配置流程专属邮箱源时使用。"),
+    SettingItem("FLOW1_MAIL_SOURCE", "流程一邮箱源", "基础设置", "choice", ("icloud_query", "moemail", "hotmail", "qq"), help_text="流程一注册长链接专用邮箱源；qq 使用 IMAP 授权码。"),
+    SettingItem("FLOW3_MAIL_SOURCE", "流程三邮箱源", "基础设置", "choice", ("icloud_query", "moemail", "hotmail", "qq"), help_text="流程三授权专用邮箱源；qq 使用 IMAP 授权码。"),
     SettingItem("FREE_MAIL_SOURCE", "Free 邮箱源", "基础设置", "choice", ("moemail", "hotmail", "icloud_query"), help_text="Free 注册专用邮箱源；当前建议使用 moemail。"),
     SettingItem("USE_PROXY", "浏览器代理", "基础设置", "bool", help_text="开启后浏览器会从代理池取代理。"),
     SettingItem("PROXY_FILE", "代理池文件", "基础设置"),

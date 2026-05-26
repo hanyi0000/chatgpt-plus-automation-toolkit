@@ -145,6 +145,8 @@ def _normalize_mail_source(value: str) -> str:
         "icloud": "icloud_query",
         "icloud_query": "icloud_query",
         "moemail": "moemail",
+        "qq": "qq_imap",
+        "qq_imap": "qq_imap",
     }
     return aliases.get(source, source or "moemail")
 
@@ -357,7 +359,7 @@ async def register_one(
         source_format = (
             "hotmail_graph"
             if account.client_id and account.refresh_token
-            else ("icloud_query" if email.lower().endswith("@icloud.com") else "code_address")
+            else ("icloud_query" if email.lower().endswith("@icloud.com") else ("qq_imap" if mail_source == "qq_imap" else "code_address"))
         )
         code_address = (account.code_address or account.mail_url or "").strip()
         session_record = session_export.extract_session_record(

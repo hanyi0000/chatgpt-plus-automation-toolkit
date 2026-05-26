@@ -32,6 +32,8 @@ def get_panel_files(root: Path | str) -> dict[str, PanelFile]:
         _panel_file(root_path, "hotmail_mail_pool", "Hotmail 邮箱池", "data/hotmail/mail_pool.txt"),
         _panel_file(root_path, "icloud_accounts", "iCloud 账号池", "data/icloud/accounts.txt"),
         _panel_file(root_path, "icloud_mail_pool", "iCloud 邮箱池", "data/icloud/mail_pool.txt"),
+        _panel_file(root_path, "qq_accounts", "QQ 账号池", "data/qq/accounts.txt"),
+        _panel_file(root_path, "qq_mail_pool", "QQ 邮箱池", "data/qq/mail_pool.txt"),
         _panel_file(root_path, "mail_accounts", "通用账号池", "data/accounts.txt"),
         _panel_file(root_path, "mail_pool", "通用邮箱池", "data/mail_pool.txt"),
         _panel_file(root_path, "paypal_links", "PayPal 长链接账号", "output/paypal注册/长链接账号/account.txt"),
