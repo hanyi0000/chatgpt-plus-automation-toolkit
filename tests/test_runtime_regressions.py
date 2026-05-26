@@ -15,3 +15,11 @@ def test_log_output_does_not_force_gbk_roundtrip() -> None:
 
     assert ".encode(\"gbk\"" not in source
     assert ".decode(\"gbk\"" not in source
+
+
+def test_paypal_auto_filler_removes_authchallenge_response_div_directly() -> None:
+    source = (ROOT / "modules" / "paypal_auto_filler.py").read_text(encoding="utf-8")
+
+    assert 'div[data-app="authchallenge_response"]' in source
+    assert "const EXACT_REMOVE_SELECTORS" in source
+    assert "for (const sel of EXACT_REMOVE_SELECTORS)" in source

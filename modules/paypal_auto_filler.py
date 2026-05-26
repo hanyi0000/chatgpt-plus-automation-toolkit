@@ -216,6 +216,7 @@ DEFAULT_PROFILE_RAW = {
 # 注入到页面的 CSS：隐藏验证码与地址自动补全
 HIDE_CSS = (
     "#captcha-standalone,.captcha-overlay,.captcha-container,"
+    'div[data-app="authchallenge_response"],'
     ".AddressAutocomplete-results"
     "{display:none!important;height:0!important;overflow:hidden!important}"
 )
@@ -3975,7 +3976,7 @@ def main() -> None:
             log("CSS transition INTACT (default; set DISABLE_TRANSITION=1 to disable)")
 
         # ============ CAPTCHA overlay 自动删除(默认开启)============
-        # 监听 #captcha-standalone / #captchaHeading / .captcha-overlay 出现并 remove,
+        # 监听 CAPTCHA 覆盖层及 authchallenge_response 容器出现并 remove,
         # 防止 PayPal 弹出 captcha 阻断流程。
         # 如怀疑影响 PayPal 风控可设 REMOVE_CAPTCHA=0 关闭。
         if os.environ.get("REMOVE_CAPTCHA", "1") == "0":
@@ -3985,7 +3986,10 @@ def main() -> None:
             context.add_init_script(
                 """
                 (function() {
-                    const SELECTORS = [
+                    const EXACT_REMOVE_SELECTORS = [
+                        'div[data-app="authchallenge_response"]',
+                    ];
+                    const CONTAINER_REMOVE_SELECTORS = [
                         '#captcha-standalone',
                         '#captchaHeading',
                         '.captcha-overlay',
@@ -3993,7 +3997,12 @@ def main() -> None:
                     ];
                     function nuke() {
                         let removed = 0;
-                        for (const sel of SELECTORS) {
+                        for (const sel of EXACT_REMOVE_SELECTORS) {
+                            document.querySelectorAll(sel).forEach((el) => {
+                                try { el.remove(); removed++; } catch(e) {}
+                            });
+                        }
+                        for (const sel of CONTAINER_REMOVE_SELECTORS) {
                             document.querySelectorAll(sel).forEach((el) => {
                                 let target = el;
                                 const corral = el.closest('.corral, .contentContainerXhr');
